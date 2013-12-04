@@ -24,24 +24,26 @@ class Heroku::Client::PgbackupsArchive
   end
 
   def capture
+    tries ||= 50
     @pgbackup = @client.create_transfer(database_url, database_url, nil,
       "BACKUP", :expire => true)
 
-    tries ||= 5
     until @pgbackup["finished_at"]
       print "."
       sleep 1
 
       begin
         @pgbackup = @client.get_transfer @pgbackup["id"]
-      rescue RestClient::ResourceNotFound, RestClient::ServiceUnavailable, RestClient::InternalServerError => error
-        print "Error getting status of transfer. Retrying in 10 seconds... #{error}"
+      rescue RestClient::ServiceUnavailable, RestClient::InternalServerError => error
+        print "\nTemporary error getting status of backup. Retrying in 10 seconds... #{error}"
         sleep 10
         if (tries -= 1).zero?
           raise error
         else
           retry
         end
+      rescue RestClient::ResourceNotFound => error
+        raise StandardError.new("Cannot find backup! There is probably a backup already in progress. Run `heroku pgbackups:destroy ID` to destroy the existing backup. #{@pgbackup.inspect}")
       end
     end
   end
