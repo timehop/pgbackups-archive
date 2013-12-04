@@ -37,7 +37,11 @@ class Heroku::Client::PgbackupsArchive
       rescue RestClient::ResourceNotFound, RestClient::ServiceUnavailable, RestClient::InternalServerError => error
         print "Error getting status of transfer. Retrying in 10 seconds... #{error}"
         sleep 10
-        retry unless (tries -= 1).zero?
+        if (tries -= 1).zero?
+          raise error
+        else
+          retry
+        end
       end
     end
   end
