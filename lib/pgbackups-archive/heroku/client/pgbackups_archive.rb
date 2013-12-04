@@ -27,10 +27,18 @@ class Heroku::Client::PgbackupsArchive
     @pgbackup = @client.create_transfer(database_url, database_url, nil,
       "BACKUP", :expire => true)
 
+    tries ||= 5
     until @pgbackup["finished_at"]
       print "."
       sleep 1
-      @pgbackup = @client.get_transfer @pgbackup["id"]
+
+      begin
+        @pgbackup = @client.get_transfer @pgbackup["id"]
+      rescue RestClient::ResourceNotFound, RestClient::ServiceUnavailable, RestClient::InternalServerError => error
+        print "Error getting status of transfer. Retrying in 10 seconds... #{error}"
+        sleep 10
+        retry unless (tries -= 1).zero?
+      end
     end
   end
 
