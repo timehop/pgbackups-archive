@@ -3,6 +3,8 @@ require "tmpdir"
 
 class Heroku::Client::PgbackupsArchive
 
+  STATUS_TRIES = 10
+
   attr_reader :client, :pgbackup
 
   def self.perform
@@ -24,7 +26,7 @@ class Heroku::Client::PgbackupsArchive
   end
 
   def capture
-    tries ||= 50
+    tries ||= STATUS_TRIES
     @pgbackup = @client.create_transfer(database_url, database_url, nil,
       "BACKUP", :expire => true)
 
@@ -34,6 +36,7 @@ class Heroku::Client::PgbackupsArchive
 
       begin
         @pgbackup = @client.get_transfer @pgbackup["id"]
+        tries = STATUS_TRIES
       rescue RestClient::ServiceUnavailable, RestClient::InternalServerError => error
         print "\nTemporary error getting status of backup. Retrying in 10 seconds... #{error}"
         sleep 10
