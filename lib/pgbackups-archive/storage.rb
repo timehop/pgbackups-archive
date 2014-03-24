@@ -3,9 +3,11 @@ require "open-uri"
 
 class PgbackupsArchive::Storage
 
-  def initialize(key, file)
+  # Default multipart_chunk_size => 5mb
+  def initialize(key, file, multipart_chunk_size=5242880)
     @key = key
     @file = file
+    @multipart_chunk_size = multipart_chunk_size
   end
 
   def connection
@@ -23,7 +25,6 @@ class PgbackupsArchive::Storage
   end
 
   def store
-    bucket.files.create :key => @key, :body => @file, :public => false, :multipart_chunk_size => 5242880
+    bucket.files.create :key => @key, :body => @file, :public => false, :multipart_chunk_size => multipart_chunk_size
   end
-
 end
