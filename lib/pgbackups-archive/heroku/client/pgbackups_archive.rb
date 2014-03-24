@@ -7,8 +7,8 @@ class Heroku::Client::PgbackupsArchive
 
   attr_reader :client, :pgbackup
 
-  def self.perform
-    backup = new
+  def self.perform(attrs={})
+    backup = new(attrs)
     backup.capture
     backup.download
     backup.archive
@@ -19,10 +19,11 @@ class Heroku::Client::PgbackupsArchive
     Heroku::Command.load
     @client   = Heroku::Client::Pgbackups.new pgbackups_url
     @pgbackup = nil
+    @attrs = attrs
   end
 
   def archive
-    PgbackupsArchive::Storage.new(key, file).store
+    PgbackupsArchive::Storage.new(key, file, @attrs[:multipart_chunk_size]).store
   end
 
   def capture
